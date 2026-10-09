@@ -1,0 +1,20 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Patient {
+  id           String   @id @default(uuid())
+  senha        String
+  nome         String
+  cpf          String
+  prioridade   String   @default("GERAL") // "GERAL" ou "PREFERENCIAL"
+  status       String   @default("AGUARDANDO") // "AGUARDANDO", "EM_ATENDIMENTO", "CONCLUÍDO"
+  consultorio  String?
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
