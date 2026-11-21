@@ -13,8 +13,19 @@ model Patient {
   nome         String
   cpf          String
   prioridade   String   @default("GERAL") // "GERAL" ou "PREFERENCIAL"
-  status       String   @default("AGUARDANDO") // "AGUARDANDO", "EM_ATENDIMENTO", "CONCLUÍDO"
+  status       String   @default("AGUARDANDO") // "AGUARDANDO", "CHAMADO", "FINALIZADO"
   consultorio  String?
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model User {
+  id           String   @id @default(uuid())
+  usuario      String   @unique // ex: "admin" ou "medico"
+  senha        String   // Armazenará o HASH gerado pelo BCrypt
+  nome         String   // ex: "Administrador UBS" ou "Dr. Silva"
+  cargo        String   // ex: "RECEPCAO" ou "MEDICO"
+  consultorio  String?  // ex: "Consultório 01" (opcional para médicos)
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 }

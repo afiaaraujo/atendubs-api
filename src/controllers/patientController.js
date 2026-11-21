@@ -79,7 +79,7 @@ export const PatientController = {
       const pacienteAtualizado = await prisma.patient.update({
         where: { id: String(id) },
         data: {
-          status: 'EM_ATENDIMENTO',
+          status: 'CHAMADO',
           consultorio
         }
       });
@@ -101,7 +101,7 @@ export const PatientController = {
 
       const pacienteFinalizado = await prisma.patient.update({
         where: { id: String(id) },
-        data: { status: 'ATENDIDO' }
+        data: { status: 'FINALIZADO' }
       });
 
       const io = req.app.get('io');
@@ -117,9 +117,9 @@ export const PatientController = {
   // Tarefa 8: Rota GET /relatorios (Métricas do sistema)
   async reports(req, res) {
     try {
-      const totalAtendidos = await prisma.patient.count({ where: { status: 'ATENDIDO' } });
+      const totalAtendidos = await prisma.patient.count({ where: { status: 'FINALIZADO' } });
       const totalAguardando = await prisma.patient.count({ where: { status: 'AGUARDANDO' } });
-      const totalEmAtendimento = await prisma.patient.count({ where: { status: 'EM_ATENDIMENTO' } });
+      const totalEmAtendimento = await prisma.patient.count({ where: { status: 'CHAMADO' } });
 
       return res.json({
         totalAtendidos,

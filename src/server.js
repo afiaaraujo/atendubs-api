@@ -4,6 +4,8 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { z } from 'zod';
+import bcrypt from 'bcrypt';
+import { PrismaClient } from '@prisma/client';
 
 import patientRoutes from './routes/patientRoutes.js';
 import { loginSchema } from './schemas/patientSchema.js';
@@ -12,6 +14,7 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+const prisma = new PrismaClient();
 
 // Configuração do Socket.io para comunicação em tempo real (Painel / TV)
 const io = new Server(server, {
@@ -28,28 +31,38 @@ app.set('io', io);
 app.use(cors());
 app.use(express.json());
 
-// Tarefa 5: Rota POST /api/login (Autenticação com validação do Zod)
-app.post('/api/login', (req, res) => {
+// Tarefa 5 / Segurança: Rota POST /api/login com consulta real no banco e BCrypt
+app.post('/api/login', async (req, res) => {
   try {
     const { usuario, senha } = loginSchema.parse(req.body);
 
-    if (usuario === 'admin' && senha === '123456') {
-      return res.json({
-        sucesso: true,
-        usuario: { nome: 'Administrador UBS', cargo: 'RECEPCAO' },
-        token: 'token-simulacao-atendubs'
-      });
+    // 1. Busca o usuário real no banco de dados SQLite via Prisma
+    const userFound = await prisma.user.findUnique({
+      where: { usuario }
+    });
+
+    if (!userFound) {
+      return res.status(401).json({ error: 'Usuário ou senha inválidos.' });
     }
 
-    if (usuario === 'medico' && senha === '123456') {
-      return res.json({
-        sucesso: true,
-        usuario: { nome: 'Dr. Silva', cargo: 'MEDICO', consultorio: 'Consultório 01' },
-        token: 'token-simulacao-atendubs'
-      });
+    // 2. Compara a senha enviada com o hash seguro armazenado no banco
+    const senhaValida = await bcrypt.compare(senha, userFound.senha);
+
+    if (!senhaValida) {
+      return res.status(401).json({ error: 'Usuário ou senha inválidos.' });
     }
 
-    return res.status(401).json({ error: 'Usuário ou senha inválidos.' });
+    // 3. Retorna os dados do usuário com sucesso (sem expor a senha)
+    return res.json({
+      sucesso: true,
+      usuario: { 
+        nome: userFound.nome, 
+        cargo: userFound.cargo,
+        consultorio: userFound.consultorio || null 
+      },
+      token: 'token-simulacao-atendubs'
+    });
+
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
@@ -63,7 +76,7 @@ app.post('/api/login', (req, res) => {
   }
 });
 
-// Registro dos Módulos de Rotas (Tarefas 3, 4, 6, 7 e 8)
+// Registro dos Módulos de Rotas
 app.use('/api', patientRoutes);
 
 // Socket.io - Gerenciamento de conexões dos clientes
